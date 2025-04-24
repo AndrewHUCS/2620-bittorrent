@@ -7,26 +7,27 @@ import hashlib
 import traceback
 from utils import bencode, bdecode, send, recv_all
 
-info_hash    = hashlib.sha1(b"myfile").digest()
+info_hash    = hashlib.sha1(b"test_file").digest()  # hard-coded file name, can change to diff files to create diff swarms
 peer_id      = b'PEER' + bytes(f"{random.randint(0, 999999):06d}", 'utf-8')
-total_pieces = 10
+total_pieces = 10   # hard-coded number of pieces of file
 
 own_pieces  = set()
 known_peers = []  # list of dicts: { 'addr':(ip,port), 'pieces':set(...) }
 
-# check what pieces are already owned
+# check what pieces the peer already has
 for i in range(total_pieces):
     try:
-        with open(f"piece_{i}.bin", "rb"):
+        with open(f"piece_{i}.bin", "rb"):  # hard-coded file name 
             own_pieces.add(i)
     except FileNotFoundError:
         pass
 
 def handle_peer(conn, addr):
+    '''handles incoming connections from other peerds'''
     try:
         print(f"[PEER] connection from {addr}")
 
-        # try handshake
+        # try to receive handshake
         raw = recv_all(conn)
         if not raw:
             print(f"[PEER] {addr} closed before handshake")
@@ -36,6 +37,7 @@ def handle_peer(conn, addr):
             print(f"[PEER] expected handshake, got {msg}")
             return
         print(f"[PEER] handshake from {addr}")
+        
         # respond to handshake
         send(conn, bencode({
             b'type':      b'handshake',
@@ -43,7 +45,7 @@ def handle_peer(conn, addr):
             b'peer_id':   peer_id
         }))
 
-        # try request
+        # try to receive request
         raw = recv_all(conn)
         if not raw:
             print(f"[PEER] {addr} closed before request")
@@ -69,7 +71,6 @@ def handle_peer(conn, addr):
         conn.close()
         print(f"[PEER] closed connection to {addr}")
 
-
 def serve_peers(listen_sock):
     while True:
         conn, addr = listen_sock.accept()
@@ -90,7 +91,6 @@ def connect_tracker(tracker_addr, listen_port):
     resp = recv_all(s)
     info = bdecode(resp)
 
-    # parse peers with piece lists
     new_list = []
     for ip_b, port_b, pieces_list in info.get(b'peers', []):
         ip   = ip_b.decode()
@@ -101,6 +101,7 @@ def connect_tracker(tracker_addr, listen_port):
     s.close()
 
 def notify_tracker_of_piece(tracker_addr, listen_port, piece_index):
+    '''helper function to tell tracker whenever a new piece is acquired by current peer'''
     s = socket.socket()
     s.connect(tracker_addr)
     notify = {
@@ -113,6 +114,7 @@ def notify_tracker_of_piece(tracker_addr, listen_port, piece_index):
     s.close()
 
 def download_loop(tracker_addr, listen_port):
+    '''constantly polls for pieces while peer hasn't obtained all of the pieces'''
     while len(own_pieces) < total_pieces:
         connect_tracker(tracker_addr, listen_port)
 
@@ -129,24 +131,25 @@ def download_loop(tracker_addr, listen_port):
                     conn = socket.socket()
                     conn.connect((ip, prt))
 
-                    # handshake + request on one connection
+                    # send handshake
                     send(conn, bencode({
                         b'type':      b'handshake',
                         b'info_hash': info_hash,
                         b'peer_id':   peer_id
                     }))
-                    recv_all(conn)  # discard handshake response
+                    recv_all(conn)
 
+                    # send request
                     send(conn, bencode({
                         b'type':  b'request',
                         b'piece': str(idx).encode()
                     }))
                     print("[DEBUG]: sent request")
 
+                    # obtain response from request and decode into piece of file
                     raw = recv_all(conn)
                     if not raw:
                         raise Exception("Empty response from peer")
-
                     msg = bdecode(raw)
                     if msg.get(b'type') == b'piece':
                         data = msg[b'data']
@@ -161,14 +164,13 @@ def download_loop(tracker_addr, listen_port):
                     break
 
                 except Exception as e:
-                    print(f"Error downloading piece {idx} from {ip}:{prt} – {e}")
-        time.sleep(2)
+                    print(f"Error downloading piece {idx} from {ip}:{prt} - {e}")
+        time.sleep(1)
 
 def main():
     if len(sys.argv) != 5:
         print("Usage: python peer.py <host> <port> <tracker_host> <tracker_port>")
         return
-
     host, port       = sys.argv[1], int(sys.argv[2])
     tracker_addr     = (sys.argv[3], int(sys.argv[4]))
 
@@ -176,8 +178,8 @@ def main():
     lsock.bind((host, port))
     lsock.listen()
     print(f"Peer listening on {host}:{port}")
-    threading.Thread(target=serve_peers, args=(lsock,), daemon=True).start()
 
+    threading.Thread(target=serve_peers, args=(lsock,), daemon=True).start()
     threading.Thread(target=download_loop, args=(tracker_addr, port), daemon=True).start()
 
     try:

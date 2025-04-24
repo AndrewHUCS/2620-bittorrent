@@ -3,15 +3,16 @@ import socket
 import threading
 from utils import bencode, bdecode, send, recv_all
 
-# info_hash → { (ip,port) → set(piece_indices) }
 torrents = {}
 
 def handle_client(conn, addr):
+    '''handles incoming connections from peers'''
     try:
         raw = recv_all(conn)
         msg = bdecode(raw)
         ip = addr[0]
 
+        # receives announcement from peers containing
         if msg.get(b'msg') == b'announce':
             info_hash = msg[b'info_hash']
             port = int(msg[b'port'])
@@ -31,6 +32,7 @@ def handle_client(conn, addr):
 
             send(conn, bencode({b'peers': peers_list}))
 
+        # receives message from peer about new pieces it obtains
         elif msg.get(b'type') == b'has_piece':
             info_hash = msg[b'info_hash']
             port = int(msg[b'port'])

@@ -1,6 +1,7 @@
 import struct
 
 def bencode(data):
+    '''encode data into b-encoded output'''
     if isinstance(data, int):
         return b'i' + str(data).encode() + b'e'
     elif isinstance(data, bytes):
@@ -17,6 +18,7 @@ def bencode(data):
         raise TypeError(f"Type {type(data)} not supported")
 
 def bdecode(data):
+    '''decode data from b-encoded input'''
     index = 0
     stack = []
     while index < len(data):
@@ -58,12 +60,12 @@ def bdecode(data):
     return stack[0]
 
 def send(sock, message):
-    """Send messageh"""
+    """send message"""
     size = struct.pack('!I', len(message))
     sock.sendall(size + message)
 
 def recv_helper(sock, n):
-    """Receive exactly n bytes from the socket"""
+    """helper function to receive the first n bytes of a message"""
     buf = b''
     while len(buf) < n:
         chunk = sock.recv(n - len(buf))
@@ -73,7 +75,7 @@ def recv_helper(sock, n):
     return buf
 
 def recv_all(sock):
-    """Receive a entire message"""
+    """receive a entire message"""
     hdr = recv_helper(sock, 4)
     if not hdr:
         return b''

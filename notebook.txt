@@ -1,0 +1,21 @@
+4/22
+____
+
+Started project. As we mentioned in our proposal, since we are just a group of two,
+we aren't sure how much of the entire BitTorrent protocol we will be able to fully
+implement. Thus, we started working on a prototype that would have the most basic 
+structure of the general BitTorrent architecture. 
+
+Wrote the b-encoding helper functions and reused some chunks of code from previous 
+assignments to get the communication over-the-wire working. We added functionality 
+for peers and the tracker to send each other messages in a couple major ways. The
+current methodology simply uses files stored in folders to represent each peer's 
+current pieces of the overall file, and downloading from one another is represented
+by peers writing files from bytes passed along by other peers into new files in
+their respective folders. There are some bugs to work out, but we have solid progress
+in creating a working prototype.
+
+4/23
+____
+
+Finished making the protoype. Files properly are shared between peers. 
