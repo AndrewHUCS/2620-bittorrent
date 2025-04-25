@@ -8,14 +8,57 @@ structure of the general BitTorrent architecture.
 
 Wrote the b-encoding helper functions and reused some chunks of code from previous 
 assignments to get the communication over-the-wire working. We added functionality 
-for peers and the tracker to send each other messages in a couple major ways. The
-current methodology simply uses files stored in folders to represent each peer's 
-current pieces of the overall file, and downloading from one another is represented
-by peers writing files from bytes passed along by other peers into new files in
-their respective folders. There are some bugs to work out, but we have solid progress
-in creating a working prototype.
+for peers and the tracker to send each other messages that represent either a 
+"first-contact" handshake to tell each other what pieces of the file the possess
+and things like their peer ids, or connections to send over a requested piece of
+the overall file.
 
 4/23
 ____
 
-Finished making the protoype. Files properly are shared between peers. 
+Since the entire BitTorrent architecture would be difficult to set up in its entirety,
+and since we want to have a good amount of progress made (and at least some kind of
+demo-able prdouct by the Design Fair), we decided to scale back our idea for our 
+prototype to have some much simpler features that would make it easier to quickly 
+implement. Our current methodology simply uses files stored in folders to represent 
+each peer's current pieces of the overall file, and downloading from one another is 
+represented by peers writing files from bytes passed along by other peers into new 
+files  in their respective folders. We start each client in the director of a given 
+folder (peer1, peer2, peer3, etc.), and we can change the initial parameters of what 
+the files are and which peer starts with which pieces of the file. We finished this
+prototype today.
+
+4/25
+____
+
+Added a timing feature and a script to generate larger files so we can see how long
+downloads actually take. From some baseline testing across several trials, it takes 
+an average of approximately 10.194 seconds for each of five clients to download all 
+the pieces of a file totalling a gigabyte. This, of course, would not reflect the 
+real time it would take should this be implemented over the Internet, as we are 
+testing this locally on a singular laptop, but this serves as a point of comparison
+for our other tests. There is also variation in the time across clients 
+because we sometimes start some clients with more pieces than others initially. 
+
+A design choice we made here was to start with at least one copy of each pieces of 
+the file have already in circulation among the peers before running our simulation,
+as opposed to having a central location where peers might first have to download 
+from initially before they can start to seed the files (which would probably be more
+reflective of torrenting in the real world). We made this choice chiefly because it 
+doesn't really add much to the theoretical component of our implementation, and it 
+would also be relatively equivalent to just adding an extra starting peer that just 
+has the initial files while starting the rest of the peers with zero files. Testing 
+this scenario yields a similar time average of 11.144 seconds. It makes sense that 
+this takes longer than the first scenario, since the pieces start with a peer that 
+others have to download from first before they can start to seed—the initial testing
+started each peer with at least one file, so they could all start seeding. To worsen
+the problem, the current implementation has peers that download the pieces in order
+starting at index 0, as we have not yet implemented a rarest-first piece selection
+algorithm.
+
+After implementing the rarest-first piece selection algorithm, we found that the new
+average download time has decreased to approximately 7.288 seconds, which is a clear
+improvement over our initial simulations. For the scenario where we start with only
+one peer that has all the files, we also see significant improvement, now taking an 
+average of 9.408 seconds, compared with the original 11.144 seconds. 
+
