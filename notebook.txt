@@ -16,17 +16,18 @@ the overall file.
 4/23
 ____
 
-Since the entire BitTorrent architecture would be difficult to set up in its entirety,
-and since we want to have a good amount of progress made (and at least some kind of
+Since the whole BitTorrent architecture would be difficult to set up in its entirety,
+and because we want to have a good amount of progress made (and at least some kind of
 demo-able prdouct by the Design Fair), we decided to scale back our idea for our 
 prototype to have some much simpler features that would make it easier to quickly 
-implement. Our current methodology simply uses files stored in folders to represent 
-each peer's current pieces of the overall file, and downloading from one another is 
-represented by peers writing files from bytes passed along by other peers into new 
-files  in their respective folders. We start each client in the director of a given 
-folder (peer1, peer2, peer3, etc.), and we can change the initial parameters of what 
-the files are and which peer starts with which pieces of the file. We finished this
-prototype today.
+implement. 
+
+Our current methodology simply uses files stored in folders to represent each peer's 
+current pieces of the overall file, and downloading from one another is represented 
+by peers writing files from bytes passed along the wire by other peers into new files 
+in their respective folders. We start each client in the director of a given folder 
+(peer1, peer2, peer3, etc.), and we can change the initial conditions what the files 
+are and which peer starts with which pieces of the file. 
 
 4/25
 ____
@@ -60,5 +61,27 @@ After implementing the rarest-first piece selection algorithm, we found that the
 average download time has decreased to approximately 7.288 seconds, which is a clear
 improvement over our initial simulations. For the scenario where we start with only
 one peer that has all the files, we also see significant improvement, now taking an 
-average of 9.408 seconds, compared with the original 11.144 seconds. 
+average of 9.408 seconds. 
 
+The reason that the rarest-first algorithm has such a large effect is because this 
+allows a much greater degree of parallelization, which is one of the largest benefits 
+of a BitTorrent network in the first place. The original algorithm was rather 
+inefficient because the peers would try to all download piece 0 from peer1. By having
+peers target the rarest pieces in the general network, this allows this piece to 
+begin being seeded, which gives more peers the ability to download these rarer files
+and/or upload their own files. In addition, if there is a tie for the rarest piece, 
+a random rarest piece is chosen, and a random peer who possesses that piece is picked
+to be requested from. This randomness is introduced to prevent all of the clients 
+requesting a given piece from the same peer, which happened a lot initially because
+we set the peers to check for possible peers to download from in increasing index
+order. 
+
+4/26
+____
+
+Created poster for design fair (added to repo) and tests for functions in utils.py, 
+peer.py, and tracker.py.
+
+
+python tracker.py 127.0.0.1 8000
+python ../peer.py 127.0.0.1 5001 127.0.0.1 8000

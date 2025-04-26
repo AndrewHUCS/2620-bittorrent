@@ -4,13 +4,12 @@ import threading
 import random
 import time
 import hashlib
-import traceback
 import collections
 from utils import bencode, bdecode, send, recv_all
 
 info_hash    = hashlib.sha1(b"test_file").digest()  # hard-coded file name, can change to diff files to create diff swarms
 peer_id      = b'PEER' + bytes(f"{random.randint(0, 999999):06d}", 'utf-8')
-total_pieces = 10    # hard-coded number of pieces of file
+total_pieces = 10   # hard-coded number of pieces of file
 
 own_pieces  = set()
 known_peers = []    # list of dicts: { 'addr':(ip,port), 'pieces':set(...) }
@@ -67,7 +66,6 @@ def handle_peer(conn, addr):
 
     except Exception:
         print(f"[ERROR] in handle_peer for {addr}:")
-        traceback.print_exc()
     finally:
         conn.close()
         print(f"[PEER] closed connection to {addr}")
@@ -196,8 +194,8 @@ def main():
     if len(sys.argv) != 5:
         print("Usage: python peer.py <host> <port> <tracker_host> <tracker_port>")
         return
-    host, port       = sys.argv[1], int(sys.argv[2])
-    tracker_addr     = (sys.argv[3], int(sys.argv[4]))
+    host, port = sys.argv[1], int(sys.argv[2])
+    tracker_addr = (sys.argv[3], int(sys.argv[4]))
 
     lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     lsock.bind((host, port))
