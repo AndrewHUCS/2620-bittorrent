@@ -113,82 +113,87 @@ def notify_tracker_of_piece(tracker_addr, listen_port, piece_index):
     s.close()
 
 def download_loop(tracker_addr, listen_port):
+    done = False
     start_time = time.time()
-    '''constantly polls for pieces while peer hasn't obtained all of the pieces'''
-    while len(own_pieces) < total_pieces:
+    while True:
         connect_tracker(tracker_addr, listen_port)
+        '''constantly polls for pieces while peer hasn't obtained all of the pieces'''
+        if len(own_pieces) < total_pieces:
+        # while len(own_pieces) < total_pieces:
+            # connect_tracker(tracker_addr, listen_port)
 
-        # rarest piece selection
-        missing_pieces = set(range(total_pieces)) - own_pieces
-        piece_counts = collections.defaultdict(int)
-        for peer in known_peers:
-            for piece in peer['pieces']:
-                if piece in missing_pieces:
-                    piece_counts[piece] += 1
-        
-        # if haven't met peer with needed pieces, wait
-        if not piece_counts:
-            time.sleep(1)
-            continue
-
-        # pick random piece from pieces tied for rarest
-        min_count = min(piece_counts.values())
-        rarest_candidates = [p for p, count in piece_counts.items() if count == min_count]
-        target = random.choice(rarest_candidates)
-
-        suitable_peers = [peer for peer in known_peers if target in peer['pieces']]
-        random.shuffle(suitable_peers)
-
-        # download from randomly chosen peer that has piece
-        for peer in suitable_peers:
-            if target not in peer['pieces']:
+            # rarest piece selection
+            missing_pieces = set(range(total_pieces)) - own_pieces
+            piece_counts = collections.defaultdict(int)
+            for peer in known_peers:
+                for piece in peer['pieces']:
+                    if piece in missing_pieces:
+                        piece_counts[piece] += 1
+            
+            # if haven't met peer with needed pieces, wait
+            if not piece_counts:
+                time.sleep(1)
                 continue
 
-            ip, prt = peer['addr']
-            try:
-                conn = socket.socket()
-                conn.connect((ip, prt))
+            # pick random piece from pieces tied for rarest
+            min_count = min(piece_counts.values())
+            rarest_candidates = [p for p, count in piece_counts.items() if count == min_count]
+            target = random.choice(rarest_candidates)
 
-                # send handshake
-                send(conn, bencode({
-                    b'type':      b'handshake',
-                    b'info_hash': info_hash,
-                    b'peer_id':   peer_id
-                }))
-                recv_all(conn)
+            suitable_peers = [peer for peer in known_peers if target in peer['pieces']]
+            random.shuffle(suitable_peers)
 
-                # request piece
-                send(conn, bencode({
-                    b'type':  b'request',
-                    b'piece': str(target).encode()
-                }))
+            # download from randomly chosen peer that has piece
+            for peer in suitable_peers:
+                if target not in peer['pieces']:
+                    continue
 
-                # obtain response from request and decode into piece of file
-                raw = recv_all(conn)
-                if not raw:
-                    raise Exception("Empty response from peer")
+                ip, prt = peer['addr']
+                try:
+                    conn = socket.socket()
+                    conn.connect((ip, prt))
 
-                msg = bdecode(raw)
+                    # send handshake
+                    send(conn, bencode({
+                        b'type':      b'handshake',
+                        b'info_hash': info_hash,
+                        b'peer_id':   peer_id
+                    }))
+                    recv_all(conn)
 
-                if msg.get(b'type') == b'piece':
-                    data = msg[b'data']
-                    with open(f"piece_{target}.bin", "wb") as f:
-                        f.write(data)
-                    own_pieces.add(target)
-                    print(f"Downloaded piece {target} from {ip}:{prt}")
+                    # request piece
+                    send(conn, bencode({
+                        b'type':  b'request',
+                        b'piece': str(target).encode()
+                    }))
 
-                    # report to tracker
-                    notify_tracker_of_piece(tracker_addr, listen_port, target)
+                    # obtain response from request and decode into piece of file
+                    raw = recv_all(conn)
+                    if not raw:
+                        raise Exception("Empty response from peer")
 
-                conn.close()
-                break
+                    msg = bdecode(raw)
 
-            except Exception as e:
-                print(f"Error downloading piece {target} from {ip}:{prt} - {e}")
+                    if msg.get(b'type') == b'piece':
+                        data = msg[b'data']
+                        with open(f"piece_{target}.bin", "wb") as f:
+                            f.write(data)
+                        own_pieces.add(target)
+                        print(f"Downloaded piece {target} from {ip}:{prt}")
 
-    end_time = time.time()
-    duration = end_time - start_time
-    print(f"\n Finished downloading all pieces in {duration:.2f} seconds.\n")
+                        # report to tracker
+                        notify_tracker_of_piece(tracker_addr, listen_port, target)
+
+                    conn.close()
+                    break
+
+                except Exception as e:
+                    print(f"Error downloading piece {target} from {ip}:{prt} - {e}")
+        elif not done:
+            done = True
+            end_time = time.time()
+            duration = end_time - start_time
+            print(f"\n Finished downloading all pieces in {duration:.2f} seconds.\n")
 
 def main():
     if len(sys.argv) != 5:
