@@ -113,15 +113,12 @@ def notify_tracker_of_piece(tracker_addr, listen_port, piece_index):
     s.close()
 
 def download_loop(tracker_addr, listen_port):
+    '''constantly poll to download while not finished and upload to others'''
     done = False
     start_time = time.time()
     while True:
         connect_tracker(tracker_addr, listen_port)
-        '''constantly polls for pieces while peer hasn't obtained all of the pieces'''
         if len(own_pieces) < total_pieces:
-        # while len(own_pieces) < total_pieces:
-            # connect_tracker(tracker_addr, listen_port)
-
             # rarest piece selection
             missing_pieces = set(range(total_pieces)) - own_pieces
             piece_counts = collections.defaultdict(int)
