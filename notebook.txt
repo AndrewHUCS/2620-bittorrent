@@ -82,11 +82,6 @@ ____
 Created poster for design fair (added to repo) and tests for functions in utils.py, 
 peer.py, and tracker.py.
 
-
-python tracker.py 127.0.0.1 8000
-python ../peer.py 127.0.0.1 5001 127.0.0.1 8000
-
-
 5/4
 ____
 Tried to use the last day to implement the Kademlia DHT protocol.
