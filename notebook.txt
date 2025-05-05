@@ -85,3 +85,30 @@ peer.py, and tracker.py.
 
 python tracker.py 127.0.0.1 8000
 python ../peer.py 127.0.0.1 5001 127.0.0.1 8000
+
+
+5/4
+____
+Tried to use the last day to implement the Kademlia DHT protocol.
+
+Kademlia assigns each node and each data key a 160-bit identifier, and arranges known 
+peers into “k-buckets” based on the XOR distance between IDs. To locate a key or 
+node, Kademlia performs an iterative lookup: it selects the α closest contacts it 
+knows, sends parallel RPCs to them, and continues with any newly discovered, closer 
+nodes. The four core RPCs—PING (liveness), STORE (replicate a key–value pair), 
+FIND_NODE (discover peers), and FIND_VALUE (retrieve data or nearest nodes)—drive all 
+lookups and maintenance. When a node joins, it “bootstraps” by querying one or more 
+well-known peers for their closest contacts to its own ID, then runs a full iterative 
+lookup on itself to fill its routing table. Buckets split only when they’re full and 
+contain the node’s own ID-range, and least-recently-seen peers are evicted first, 
+keeping the routing table fresh and ensuring robust, efficient searches.
+
+Could not get all parts to work, but we have a draft of this DHT protocol that can be 
+seen in DHT.py. In particular, we discovered that it's actually quite hard to get the 
+nodes in the network to find each other, and so every node would just assume it was 
+the first node in the network and start off its own hash table. With more time, we 
+would be able to refactor the code to ensure proper finding of other nodes in the 
+network. However, since we are coming up on the deadline for this project, we decided 
+to ditch this attempt. This isn't too disappointing, since the trackerless version of 
+BitTorrent using a distributed hash table was only introduced later on and so this 
+was never a "required" part of the project for us to complete.
